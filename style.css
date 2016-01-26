@@ -1,0 +1,54 @@
+/*Add class dropdown to each of the dropdown menus*/
+body
+{
+/*background-image:url('background.jpg');*/
+background-color:#cccccc;
+}
+#canvas {
+	/*center*/
+	text-align:center;
+}
+
+#title{
+	/*left*/
+	text-align:left;
+}
+
+
+#menus{
+
+}
+
+.dropdown select{
+	/*border: 0;*/
+	-webkit-appearance: none;
+	/*-moz-appearance: none;*/
+
+	background: url('dropdown_arrow.png') no-repeat;         /*Adds background-image*/
+    background-position: 75px -4px;                /*Position of the background-image*/
+    width: 100px;                /*Width of select dropdown to give space for arrow image*/
+    
+    text-indent: 0.01px;
+ 	text-overflow: "";
+
+ 	/*text-align:center;*/
+
+ 	/*background: #cccccc;*/
+ 	/*width: 200%;*/
+     text-align: center;
+     /*padding-left: 20%;*/
+
+}
+
+.dropdown select > ul >li {
+	/*text-align: center;*/
+
+	display:inline-block;
+
+    margin-left: 15px;       /* This is when the drop down box appears */
+
+    position: relative;
+   /* background: #cccccc;*/
+}
+
+

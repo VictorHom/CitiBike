@@ -1,0 +1,465 @@
+<!-- <!DOCTYPE html> -->
+<html>
+<head>
+	<link rel="shortcut icon" href="bikeicon.png"/>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="http://d3js.org/d3.v3.min.js" type="text/javascript"></script>
+<style>
+	.chord path {
+	  fill-opacity: .67;
+	  stroke: #000;
+	  stroke-width: .2px;
+	}
+	svg { position:fixed; top:20px; left:0px; height:100%; width:100% }
+	#title { font-size: xx-large; font-family: "Helvetica";}
+	#menus { position:fixed; top:100px; width:300px; font-family: "Helvetica";}
+
+</style>
+
+
+<title>Manhattan Bike Rides</title>
+
+</head>
+
+
+<body>
+<div id="title" style="color: #3A3A3B">
+Manhattan CitiBike Trips 2013-2014
+</div>
+<div id="canvas" ></div>
+<div id="menus">
+
+Month: <form  class="dropdown" action="" style="display:inline-block;">
+<select name="months" id="months">
+<option value="">All</option>
+<option value="6">July '13</option>
+<option value="7">August '13</option>
+<option value="8">September '13</option>
+<option value="9">October '13</option>
+<option value="10">November '13</option>
+<option value="11">December '13</option>
+<option value="0">January '14</option>
+<option value="1">February '14</option>
+</select>
+</form>
+
+<br>
+Day of the Week: <form class="dropdown" action="" style="display:inline-block;">
+<select name="days" id="days">
+<option value="">All</option>
+<option value="0">Monday</option>
+<option value="1">Tuesday</option>
+<option value="2">Wednesday</option>
+<option value="3">Thursday</option>
+<option value="4">Friday</option>
+<option value="5">Saturday</option>
+<option value="6">Sunday</option>
+</select>
+</form>
+
+<br>
+Time of the Day: <form class="dropdown" action="" style="display:inline-block;">
+<select name="hours" id="hours">
+<option value="">All</option>
+<option value="0">12am - 3am</option>
+<option value="3">3am - 6am</option>
+<option value="6">6am - 9am</option>
+<option value="9">9am - 12pm</option>
+<option value="12">12pm - 3pm</option>
+<option value="15">3pm - 6pm</option>
+<option value="18">6pm - 9pm</option>
+<option value="21">9pm - 12am</option>
+</select>
+</form>
+
+<br>
+Gender: 
+<form  class="dropdown" action="" style="display:inline-block;">
+<select name="gender" id="gender">
+<option value="">All</option>
+<option value="1">Male</option>
+<option value="2">Female</option>
+</select>
+</form>
+
+<br>
+Age: <form  class="dropdown" action="" style="display:inline-block;">
+<select name="age" id="age">
+<option value="">All</option>
+<option value="10">10-19 years old</option>
+<option value="20">20-29 years old</option>
+<option value="30">30-39 years old</option>
+<option value="40">40-49 years old</option>
+<option value="50">50-59 years old</option>
+<option value="60">60-69 years old</option>
+<option value="70">70+ years old</option>
+</select>
+</form>
+
+<br>
+Trip Duration: <form class="dropdown" action="" style="display:inline-block;">
+<select name="duration" id="duration">
+<option value="">All</option>
+<option value="0">0-5 minutes</option>
+<option value="300">5-10 minutes</option>
+<option value="600">10-15 minutes</option>
+<option value="900">15-20 minutes</option>
+<option value="1200">20-25 minutes</option>
+<option value="1500">25-30 minutes</option>
+<option value="1800">30-35 minutes</option>
+<option value="2100">35-40 minutes</option>
+<option value="2400">40+ minutes</option>
+</select>
+</form>
+</div>
+<div id="trips">Total Number of Trips:</div>
+<div id="numberTrips"></div>
+
+<script type="text/javascript">
+
+//Returns the width and height of the current window size.
+//Function taken from http://andylangton.co.uk/blog/development/get-viewport-size-width-and-height-javascript
+function viewport() {
+	var e = window, a = 'inner';
+	if (!('innerWidth' in window)){
+		a = 'client';
+		e = document.documentElement || document.body;
+	}
+	return { width : e[ a+'Width' ] , height : e[ a+'Height' ] };
+}
+
+//Defines the size of the diagram based on the window size.
+var v = viewport();
+var height = v.height - 10;
+var width = v.width;
+
+document.getElementById("trips")
+	.setAttribute("style","font-size:20; font-family:Helvetica; position:fixed; top:"+(height - 110)+"px");
+document.getElementById("numberTrips")
+	.setAttribute("style","font-size:70; font-family:Helvetica; position:fixed; top:"+(height - 85)+"px");
+
+sections = ["Upper Manhattan","Midtown West","Midtown East","Garment District","Chelsea",
+			"Flatiron District","West Village","East Village","SoHo","Tribeca","Lower East Side","Financial District"]
+
+var dataMatrix = {};
+for(var i = 0; i < sections.length; i++){
+	dataMatrix[sections[i]] = {};
+	for(var j = 0; j < sections.length; j++){
+		dataMatrix[sections[i]][sections[j]] = new Array();
+	}
+}
+
+var numTrips = 0;
+var matrix = new Array();
+for(var i = 0; i < sections.length; i++){
+	matrix.push(new Array());
+	for(var j = 0; j < sections.length; j++){
+		matrix[i].push(0);
+	}
+}
+
+var filterTypes = ["starttime1", "starttime2", "starttime3", "gender0", "birthyear0", "tripduration0"];
+var filters = {};
+for(var i = 0; i < filterTypes.length; i++){
+	filters[filterTypes[i]] = {active:0, val:0};
+}
+var filterfunctions = [
+	function (filterVal,actualVal) {return +filterVal != actualVal.getMonth();},
+	function (filterVal,actualVal) {return +filterVal > actualVal.getHours() || +filterVal+3 <= actualVal.getHours();},
+	function (filterVal,actualVal) {return +filterVal != actualVal.getDay();},
+	function (filterVal,actualVal) {return +filterVal != actualVal;},
+	function (filterVal,actualVal) {
+		var age = 2013 - actualVal;
+		if (age >= 70) return +filterVal != 70;
+		else return +filterVal > 2013 - actualVal || +filterVal+10 <= 2013 - actualVal;
+	},
+	function (filterVal,actualVal) {
+		if (actualVal >= 2400) return +filterVal != 2400;
+		else return +filterVal > actualVal || +filterVal+300 <= actualVal;
+	}
+]
+
+var layout = d3.layout.chord().padding(.05);
+var innerRadius = Math.min(width, height) * .41;
+var outerRadius = innerRadius * 1.1;
+var svg = d3.select("#canvas")
+	.append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("id", "svgcanvas");
+
+// projection for the map
+var projection = d3.geo.albersUsa().translate([width / 2 - 43650, height / 2 + 10450]).scale(150000);//.scale([150]);
+// variable that holds all data points
+var allStations= null;
+var listAllStations = new Array();
+
+var fill = d3.scale.ordinal()
+    .domain(d3.range(4))
+    .range(["#FFCC00", "#FFDD89", "#957244", "#F26223"]);
+
+d3.csv("categorized_data_1800.csv", 
+	function(d){
+		return{
+			start_section_name: d.start_section_name,
+			end_section_name: d.end_section_name,
+			tripduration: +d.tripduration,
+			starttime: new Date(d.starttime),
+			stoptime: new Date(d.stoptime),
+			start_station_name: d.start_station_name,
+			start_station_latitude: +d.start_station_latitude,
+			start_station_longitude: +d.start_station_longitude,
+			end_station_name: d.end_station_name,
+			end_station_latitude: +d.end_station_latitude,
+			end_station_longitude: +d.end_station_longitude,
+			usertype: +d.usertype,
+			birthyear: +d.birth_year,
+			gender: +d.gender
+		}
+	},
+	function(error, rows){
+		for(var i = 0; i < rows.length; i++){
+			dataMatrix[rows[i]["start_section_name"]][rows[i]["end_section_name"]].push(rows[i]);
+		}
+
+		for(var i = 0; i < sections.length; i++){
+			for(var j = 0; j < sections.length; j++){
+				matrix[i][j] += dataMatrix[sections[i]][sections[j]].length;
+				numTrips += matrix[i][j];
+			}
+		}
+		// draw chord
+		draw();
+
+		// draw the manhattan map, mark all stations, intialize data variable for allStations
+		drawMap();
+
+		function draw(){
+			//d3.select("svg").remove();
+			d3.select("#groupId").remove();
+			svg.append("g")
+			  	.attr("id", "groupId")
+			    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+			document.getElementById("numberTrips").innerHTML = numTrips;
+
+			layout.matrix(matrix);
+
+		    var group = svg.select("#groupId").selectAll(".group")
+		    	.data(layout.groups)
+		    	.enter().append("g")
+		    	.attr("class", "group")
+			    .on("mouseover", fade(.1))
+	    		.on("mouseout", fade(1));
+
+	    	function fade(opacity) {
+			  	return function(g, i) {	
+			  		// if mouseover
+			  		if(opacity < 1){
+			  			var coordinates = new Array();
+				  		var ori = sections[i];
+				  		var cnt = 0;
+				  		for(var k = 0; k < sections.length; k++){
+				  			//console.log(dataMatrix[ori][sections[k]]);
+				  			// found the unique stations for this section
+				  			var thisSection = dataMatrix[ori][sections[k]];
+				  			for(var j = 0; j < thisSection.length; j++){
+			  					var isFound = false;
+			  					cnt++;
+			  					for(var x = 0; x < coordinates.length; x++){
+			  						if(coordinates[x].lat == thisSection[j].start_station_latitude && coordinates[x].lon == thisSection[j].start_station_longitude){
+			  							isFound = true;
+			  						}
+			  					}
+			  					if(!isFound){
+			  						coordinates.push({lat:thisSection[j].start_station_latitude, lon:thisSection[j].start_station_longitude});
+			  					}
+				  			}
+				  		}
+				  		// plot markers for stations on the map
+				  		var map = d3.select("#map");
+				  		d3.selectAll("#allSectionPoints").remove();
+				  		coordinates.forEach(function(element, index, array){
+				  			var location = projection([element.lon, element.lat]);
+				  			map.append("circle")
+				  				.attr("id", "sectionPoints")
+								.attr("cx", location[0])
+								.attr("cy", location[1])
+								.attr("r", 2)
+								.attr("fill", "red");
+				  		});
+
+				  		document.getElementById("numberTrips").innerHTML = cnt;
+			  		}
+			  		// if mouseout
+			  		else{
+			  			d3.selectAll("#sectionPoints").remove();
+			  			plotAllPoints();
+			  			document.getElementById("numberTrips").innerHTML = numTrips;
+			  		}
+
+			    	svg.selectAll(".chord path")
+			        	.filter(function(d) { return d.source.index != i && d.target.index != i; })
+			      		.transition()
+			        	.style("opacity", opacity);
+			  };
+			}
+
+		    group.append("title").text(function(d, i) {return sections[i];});
+
+		    if (numTrips > 0) {
+			    var groupPath = group.append("path")
+			        .attr("id", function(d, i) { return "group" + i; })
+			        .attr("d", d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius))
+			        .style("fill", function(d) { return fill(d.index); })
+				    .style("stroke", function(d) { return fill(d.index); });
+			}
+
+		    var groupText = group.append("text")
+		        .attr("x", 6)
+		        .attr("dy", 15)
+		        .attr("fill", "#000000")
+		        .attr("font-weight","bold")
+		        .attr("font-size", 14)
+		        .attr("font-family", "Helvetica");
+
+		    groupText.append("textPath")
+		        .attr("xlink:href", function(d, i) { return "#group" + i; })
+		        .text(function(d, i) { return format(sections[i]); });
+
+		    if (numTrips > 0) {
+			    groupText.filter(function(d, i) {
+			    	return groupPath[0][i].getTotalLength() / 2 - 26 < this.getComputedTextLength(); 
+			    }).remove();
+			}
+
+			var chord = svg.select("#groupId").append("g").attr("class", "chord").selectAll("path")
+			    .data(layout.chords).enter().append("path")
+			    .attr("d", d3.svg.chord().radius(innerRadius))
+			    .style("fill", function(d) { return fill(d.target.index); })
+			    .style("opacity", 1);
+		}
+
+		function computeMatrix() {
+			numTrips = 0;
+			for(var i = 0; i < sections.length; i++){
+				for(var j = 0; j < sections.length; j++){
+					matrix[i][j] = 0;
+					matrix[i][j] += filterArr(dataMatrix[sections[i]][sections[j]]);
+					numTrips += matrix[i][j];
+				}
+			}
+			draw();
+		}
+
+		function filterArr(arr) {
+			var num = 0;
+			for (var i = 0; i < arr.length; i++){
+				var satisfied = 1;
+				for (var j = 0; j < filterTypes.length; j++){
+					var filter = filters[filterTypes[j]];
+					var attribute = filterTypes[j].substring(0,filterTypes[j].length - 1);
+					if (filter["active"] == 1 && filterfunctions[j](filter["val"], arr[i][attribute])){
+						satisfied = 0;
+						break;
+					}
+				}
+				num += satisfied;
+			}
+			return num;
+		}
+
+		function generateOnChangeFunction(filterType, formID) {
+			return function () {
+				if (document.getElementById(formID).value == "") {
+					filters[filterType]["active"] = 0;
+				}
+				else {
+					filters[filterType]["active"] = 1;
+					filters[filterType]["val"] = document.getElementById(formID).value;
+				}
+				computeMatrix();
+			};
+		}
+
+		document.getElementById("months").onchange = generateOnChangeFunction("starttime1", "months");
+		document.getElementById("days").onchange = generateOnChangeFunction("starttime2", "days");
+		document.getElementById("hours").onchange = generateOnChangeFunction("starttime3", "hours");
+		document.getElementById("gender").onchange = generateOnChangeFunction("gender0", "gender");
+		document.getElementById("age").onchange = generateOnChangeFunction("birthyear0", "age");
+		document.getElementById("duration").onchange = generateOnChangeFunction("tripduration0", "duration");
+	}		
+);
+
+function format(name) {
+	if(name == "Garment District")
+		return "Garment";
+	else if(name == "Financial District")
+		return "Financial D.";
+	else if(name == "Upper Manhattan")
+		return "U.M."
+	else return name;
+}
+
+// function to draw the map
+function drawMap(){
+	var path = d3.geo.path().projection(projection);
+	d3.json("nybb.json", function(json) {
+	    var map = svg.append("g")
+	    	.attr("id", "map")
+	    	.selectAll("path")
+	    	.data(json.features)
+	    	.enter()
+	    	.append("path")
+	    	.attr("d", path)
+	    	.style("stroke", "#888888")
+			.style("fill", "#cccccc");
+			plotAllPoints();
+	});
+}
+
+// plot all the points for all stations
+function plotAllPoints(){
+	// if not cached
+	if(allStations == null){
+		d3.csv("allStations.csv",
+			function(d){
+				return {
+					lat : parseFloat(d.lat),
+					lon : parseFloat(d.lon)
+				}
+			},
+			function(error, rows){
+				var map = d3.select("#map");
+				for(var i = 0; i < rows.length; i++){
+					var loc = projection([rows[i].lon, rows[i].lat]);
+					map.append("circle")
+						.attr("id", "allSectionPoints")
+						.attr("cx", loc[0])
+						.attr("cy", loc[1])
+						.attr("r", 2)
+						.attr("fill", "red");
+				}
+				allStations = rows;
+			});
+	}
+	// if cached
+	else{
+		var map = d3.select("#map");
+		for(var i = 0; i < allStations.length; i++){
+			var loc = projection([allStations[i].lon, allStations[i].lat]);
+			map.append("circle")
+				.attr("id", "allSectionPoints")
+				.attr("cx", loc[0])
+				.attr("cy", loc[1])
+				.attr("r", 2)
+				.attr("fill", "red");
+		}
+	}
+}
+
+</script>
+
+</body>
+
+</html>
