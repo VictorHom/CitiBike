@@ -3,7 +3,7 @@
 <head>
 	<link rel="shortcut icon" href="bikeicon.png"/>
 <link rel="stylesheet" type="text/css" href="style.css">
-<script src="http://d3js.org/d3.v3.min.js" type="text/javascript"></script>
+<script src="https://d3js.org/d3.v3.min.js" type="text/javascript"></script>
 <style>
 	.chord path {
 	  fill-opacity: .67;
@@ -73,7 +73,7 @@ Time of the Day: <form class="dropdown" action="" style="display:inline-block;">
 </form>
 
 <br>
-Gender: 
+Gender:
 <form  class="dropdown" action="" style="display:inline-block;">
 <select name="gender" id="gender">
 <option value="">All</option>
@@ -198,7 +198,7 @@ var fill = d3.scale.ordinal()
     .domain(d3.range(4))
     .range(["#FFCC00", "#FFDD89", "#957244", "#F26223"]);
 
-d3.csv("categorized_data_1800.csv", 
+d3.csv("categorized_data_1800.csv",
 	function(d){
 		return{
 			start_section_name: d.start_section_name,
@@ -253,7 +253,7 @@ d3.csv("categorized_data_1800.csv",
 	    		.on("mouseout", fade(1));
 
 	    	function fade(opacity) {
-			  	return function(g, i) {	
+			  	return function(g, i) {
 			  		// if mouseover
 			  		if(opacity < 1){
 			  			var coordinates = new Array();
@@ -329,7 +329,7 @@ d3.csv("categorized_data_1800.csv",
 
 		    if (numTrips > 0) {
 			    groupText.filter(function(d, i) {
-			    	return groupPath[0][i].getTotalLength() / 2 - 26 < this.getComputedTextLength(); 
+			    	return groupPath[0][i].getTotalLength() / 2 - 26 < this.getComputedTextLength();
 			    }).remove();
 			}
 
@@ -388,7 +388,7 @@ d3.csv("categorized_data_1800.csv",
 		document.getElementById("gender").onchange = generateOnChangeFunction("gender0", "gender");
 		document.getElementById("age").onchange = generateOnChangeFunction("birthyear0", "age");
 		document.getElementById("duration").onchange = generateOnChangeFunction("tripduration0", "duration");
-	}		
+	}
 );
 
 function format(name) {
