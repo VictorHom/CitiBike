@@ -2,6 +2,7 @@
   "name": "citibike",
   "version": "1.0.0",
   "description": "visualization of 2014 citi bike data",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
