@@ -3,4 +3,4 @@
 
 This was my first javascript application
 You can check the app at https://thawing-beach-13394.herokuapp.com/
-![alt tag](https://github.com/VictorHom/CitiBike/blob/master/citibike.jpg)
+![alt tag](https://github.com/VictorHom/CitiBike/blob/master/citibike.png)
