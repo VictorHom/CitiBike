@@ -1,0 +1,25 @@
+{
+  "name": "citibike",
+  "version": "1.0.0",
+  "description": "visualization of 2014 citi bike data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VictorHom/CitiBike.git"
+  },
+  "keywords": [
+    "bike",
+    "citi",
+    "d3",
+    "maps"
+  ],
+  "author": "victor hom",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/VictorHom/CitiBike/issues"
+  },
+  "homepage": "https://github.com/VictorHom/CitiBike#readme"
+}
